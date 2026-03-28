@@ -2,6 +2,7 @@ package pages;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -43,54 +44,54 @@ public class CheckoutPage {
     }
 
     /**
-     * Clicks an element via JavaScript.
-     * Bypasses CSS overlays or animations that block normal Selenium clicks in headless CI.
+     * Clicks an element via JavaScript — bypasses overlay/animation issues
+     * that block normal Selenium clicks in headless CI.
      */
     private void jsClick(WebElement element) {
         js.executeScript("arguments[0].scrollIntoView(true);", element);
         js.executeScript("arguments[0].click();", element);
     }
 
+    /**
+     * Clears and fills a form field reliably in headless Chrome.
+     *
+     * FIX: React-controlled inputs ignore Selenium's clear() in headless CI —
+     * the field appears cleared but React's internal state still holds the old value,
+     * so validation fires against the stale state. The fix:
+     * 1. Click the field to focus it
+     * 2. Select all existing text with Ctrl+A
+     * 3. Type the new value (or send empty string to leave blank)
+     * This triggers React's onChange correctly in all environments.
+     */
+    private void fillField(By locator, String value) {
+        WebElement field = wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+        field.click();
+        field.sendKeys(Keys.chord(Keys.CONTROL, "a"));
+        if (value != null && !value.isEmpty()) {
+            field.sendKeys(value);
+        } else {
+            field.sendKeys(Keys.DELETE);
+        }
+    }
+
     // ── Step 1: Customer Information ─────────────────────────────────────────
 
-    /**
-     * Fills in the customer info form fields.
-     * Waits for each field to be visible before interacting — ensures the
-     * Step 1 page is fully rendered before typing.
-     */
     public void fillCustomerInfo(String firstName, String lastName, String postalCode) {
-        WebElement fn = wait.until(ExpectedConditions.visibilityOfElementLocated(firstNameField));
-        fn.clear();
-        fn.sendKeys(firstName);
-
-        WebElement ln = wait.until(ExpectedConditions.visibilityOfElementLocated(lastNameField));
-        ln.clear();
-        ln.sendKeys(lastName);
-
-        WebElement pc = wait.until(ExpectedConditions.visibilityOfElementLocated(postalCodeField));
-        pc.clear();
-        pc.sendKeys(postalCode);
+        fillField(firstNameField, firstName);
+        fillField(lastNameField, lastName);
+        fillField(postalCodeField, postalCode);
     }
 
     /**
-     * Clicks the Continue button via JavaScript.
-     *
-     * FIX: Normal Selenium click was being silently blocked by headless Chrome
-     * in CI — same overlay/animation issue as CartPage. JS click bypasses this.
-     *
-     * No URL wait here because:
-     * - Valid form → URL changes to step-two (handled by isOnStep2())
-     * - Invalid form → URL stays on step-one, error appears (handled by getErrorMessage())
+     * Clicks Continue via JavaScript.
+     * No URL wait here — valid form navigates to step-two (isOnStep2 handles that),
+     * invalid form stays on step-one and shows an error (getErrorMessage handles that).
      */
     public void clickContinue() {
         WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(continueButton));
         jsClick(btn);
     }
 
-    /**
-     * Returns the validation error shown on Step 1.
-     * Waits for the error element to become visible after Continue is clicked.
-     */
     public String getErrorMessage() {
         return wait.until(ExpectedConditions.visibilityOfElementLocated(errorMessage)).getText();
     }
@@ -102,8 +103,8 @@ public class CheckoutPage {
     // ── Step 2: Order Overview ────────────────────────────────────────────────
 
     /**
-     * Checks if the browser is on Step 2.
-     * Actively waits for the URL to change rather than just reading it instantly.
+     * Actively waits for the Step 2 URL rather than just reading it instantly.
+     * Without this, the check races ahead of navigation in CI and returns false.
      */
     public boolean isOnStep2() {
         try {
@@ -127,10 +128,7 @@ public class CheckoutPage {
     }
 
     /**
-     * Clicks Finish via JavaScript and waits for the confirmation page URL.
-     *
-     * FIX: Same headless CI click-blocking issue as Continue button.
-     * JS click ensures the event fires regardless of overlay state.
+     * Clicks Finish via JavaScript and waits for the confirmation URL.
      */
     public void clickFinish() {
         WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(finishButton));
