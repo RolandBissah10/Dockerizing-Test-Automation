@@ -7,7 +7,6 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# ✅ FIX: Required for junit report
 permissions:
   contents: read
   checks: write
@@ -30,21 +29,32 @@ jobs:
             --tag swag-labs-tests:latest \
             .
 
-      # 3. Run container (DO NOT remove it yet)
+      # 3. Run tests in container
+      #
+      # Key flags explained:
+      # --shm-size=2g         → Gives Chrome enough shared memory to run without crashing.
+      #                         Docker's default is only 64MB — Chrome needs ~2GB to be stable.
+      #                         This is the #1 fix for SessionNotCreatedException in CI.
+      #
+      # --name test-run       → Names the container so we can copy reports from it in step 4.
+      #
+      # || true               → Prevents the pipeline from stopping here if tests fail,
+      #                         so we still extract reports and publish results.
       - name: Run test suite in container
         run: |
           docker run \
             --name test-run \
+            --shm-size=2g \
             swag-labs-tests:latest || true
 
-      # 4. Copy reports from the SAME container
+      # 4. Copy Surefire reports out of the stopped container
       - name: Extract test reports
         if: always()
         run: |
           docker cp test-run:/app/target/surefire-reports ./surefire-reports || true
           docker rm test-run || true
 
-      # 5. Publish test results (GitHub Checks)
+      # 5. Publish results as a GitHub Check (shows pass/fail per test)
       - name: Publish test results
         uses: mikepenz/action-junit-report@v4
         if: always()
@@ -53,7 +63,7 @@ jobs:
           check_name: JUnit Test Results
           fail_on_failure: true
 
-      # 6. Upload reports artifact
+      # 6. Upload reports as a downloadable artifact (keeps for 14 days)
       - name: Upload Surefire reports artifact
         uses: actions/upload-artifact@v4
         if: always()
