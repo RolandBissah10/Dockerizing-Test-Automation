@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: tests.CartTest
 -------------------------------------------------------------------------------
-Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 52.86 s -- in tests.CartTest
+Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 46.84 s -- in tests.CartTest
