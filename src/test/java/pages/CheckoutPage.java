@@ -44,10 +44,9 @@ public class CheckoutPage {
     /**
      * Fills in the customer info form fields.
      *
-     * FIX: Using clear() before sendKeys() was unreliable in CI — if the field
-     * already has a value, clear() sometimes doesn't trigger the React onChange
-     * event, leaving the field in a broken state. We now use an explicit wait
-     * for each field to be visible before interacting with it.
+     * FIX: Explicitly waits for each field to be visible before interacting.
+     * This ensures the Step 1 page is fully rendered before we try to type,
+     * which was causing silent failures in CI where the page loaded slowly.
      */
     public void fillCustomerInfo(String firstName, String lastName, String postalCode) {
         WebElement fn = wait.until(ExpectedConditions.visibilityOfElementLocated(firstNameField));
@@ -66,23 +65,19 @@ public class CheckoutPage {
     /**
      * Clicks the Continue button.
      *
-     * If all fields are valid → navigates to Step 2 (URL changes).
-     * If fields are invalid → stays on Step 1 and shows an error message.
-     *
-     * FIX: We do NOT add a URL wait here because when validation fails,
-     * the URL does NOT change — we stay on Step 1. Instead, each individual
-     * method (isOnStep2, getErrorMessage) does its own appropriate wait.
+     * NOTE: No URL wait here — if fields are invalid the URL does NOT change
+     * (we stay on Step 1 and an error appears). Each caller handles its own
+     * outcome via isOnStep2() or getErrorMessage().
      */
     public void clickContinue() {
         wait.until(ExpectedConditions.elementToBeClickable(continueButton)).click();
     }
 
     /**
-     * Returns the validation error message shown on Step 1.
+     * Returns the validation error shown on Step 1.
      *
-     * FIX: Previously timed out in CI because the error element takes a moment
-     * to appear after clicking Continue with empty fields. Explicit visibility
-     * wait ensures we give it enough time.
+     * FIX: Waits for the error element to become visible — it appears after
+     * a short delay following the Continue click, which CI wasn't waiting for.
      */
     public String getErrorMessage() {
         return wait.until(ExpectedConditions.visibilityOfElementLocated(errorMessage)).getText();
@@ -95,11 +90,11 @@ public class CheckoutPage {
     // ── Step 2: Order Overview ────────────────────────────────────────────────
 
     /**
-     * Checks if the browser is currently on Step 2.
+     * Checks if the browser is on Step 2.
      *
-     * FIX: Wait for the URL to actually change to step-two before returning.
-     * Without this, the URL check runs before navigation completes in CI,
-     * returning false even though the page is loading correctly.
+     * FIX: Actively waits for the URL to change rather than just reading it
+     * instantly. Without this, the check runs before navigation completes
+     * in CI and returns false even when the page is loading correctly.
      */
     public boolean isOnStep2() {
         try {
@@ -123,11 +118,11 @@ public class CheckoutPage {
     }
 
     /**
-     * Clicks the Finish button and waits for the confirmation page to load.
+     * Clicks Finish and waits for the confirmation page URL.
      *
-     * FIX: Added a wait for the finish button to be clickable AND a URL wait
-     * after clicking. In CI, the Step 2 page sometimes renders slowly, making
-     * the finish button not yet interactable when clickFinish() is called.
+     * FIX: Step 2 sometimes renders slowly in CI — the finish button was
+     * not yet clickable when the test tried to click it. Now we wait for
+     * it to be clickable, click, then confirm navigation via URL wait.
      */
     public void clickFinish() {
         wait.until(ExpectedConditions.elementToBeClickable(finishButton)).click();

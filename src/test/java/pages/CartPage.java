@@ -66,11 +66,12 @@ public class CartPage {
     /**
      * Clicks the cart icon and waits for the cart page URL to load.
      *
-     * FIX: Added URL wait — without it, isOnCartPage() runs before the browser
-     * finishes navigating and returns false in CI (slower than local).
+     * FIX: Added explicit wait for the cart icon to be clickable before clicking,
+     * then waits for URL to confirm navigation completed. Without this, the click
+     * fires before the element is interactive in CI and the URL never changes.
      */
     public void openCart() {
-        driver.findElement(cartLink).click();
+        wait.until(ExpectedConditions.elementToBeClickable(cartLink)).click();
         wait.until(ExpectedConditions.urlContains("/cart.html"));
     }
 
@@ -85,7 +86,7 @@ public class CartPage {
     /**
      * Removes the first item in the cart and waits for the DOM to update.
      *
-     * FIX: Waits for the button to go stale after clicking remove.
+     * FIX: Waits for the button element to go stale after clicking remove.
      * Without this, getCartItemCount() reads the DOM before it updates
      * and returns the old count (2 instead of 1).
      */
@@ -101,10 +102,9 @@ public class CartPage {
     /**
      * Clicks the Checkout button and waits for Step 1 URL to confirm navigation.
      *
-     * FIX: The checkout button requires the cart page to be fully loaded first.
-     * We wait for the cart URL before clicking, then wait for step-one URL after.
-     * Without these waits, CI fails with "element not clickable: By.id: checkout"
-     * because the page hadn't finished loading when the click was attempted.
+     * FIX: Waits for the cart page URL first (confirms we're on cart.html),
+     * then waits for the checkout button to be clickable before clicking,
+     * then waits for step-one URL to confirm the page changed.
      */
     public void proceedToCheckout() {
         wait.until(ExpectedConditions.urlContains("/cart.html"));
@@ -115,9 +115,8 @@ public class CartPage {
     /**
      * Clicks Continue Shopping and waits for the inventory page to load.
      *
-     * FIX: Added URL wait — same timing issue as openCart().
-     * CI is slower than local, so the URL check in the test was running
-     * before the browser finished navigating back to inventory.
+     * FIX: Added URL wait after click — CI is slower than local so the
+     * URL check in the test was running before the browser finished navigating.
      */
     public void continueShopping() {
         wait.until(ExpectedConditions.elementToBeClickable(continueShoppingBtn)).click();

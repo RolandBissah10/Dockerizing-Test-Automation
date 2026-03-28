@@ -28,7 +28,6 @@ public class ProductsPage {
     private final By sortDropdown        = By.cssSelector("[data-test='product-sort-container']");
     private final By addToCartButtons    = By.cssSelector("[data-test^='add-to-cart']");
     private final By cartBadge           = By.cssSelector(".shopping_cart_badge");
-    private final By cartLink            = By.cssSelector(".shopping_cart_link");
 
     // Detail page locators
     private final By detailName          = By.cssSelector(".inventory_details_name");
@@ -120,9 +119,9 @@ public class ProductsPage {
     }
 
     /**
-     * Clicks the Back button and waits for the inventory page to load.
+     * Clicks the Back button and waits for the inventory URL to load.
      *
-     * FIX: Added URL wait after click. In CI, isDisplayed() was running
+     * FIX: Added urlToBe wait after click. In CI, isDisplayed() was running
      * before the browser navigated back, so the title check returned false.
      */
     public void clickBackToProducts() {
@@ -157,12 +156,12 @@ public class ProductsPage {
     // ── Navigation ───────────────────────────────────────────────────────────
 
     /**
-     * Logs out via the burger menu and waits for the login page to load.
+     * Logs out via the burger menu and waits for the login page URL.
      *
      * FIX: The burger menu has a slide-open animation. In CI, clicking
      * logoutLink immediately after opening the menu fails because the link
      * isn't yet clickable. We explicitly wait for the link to be clickable,
-     * then wait for the URL to confirm the logout completed.
+     * then wait for the URL to confirm logout completed.
      */
     public void logout() {
         wait.until(ExpectedConditions.elementToBeClickable(burgerMenuButton)).click();
