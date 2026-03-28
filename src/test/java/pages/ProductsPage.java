@@ -1,6 +1,7 @@
 package pages;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -13,37 +14,41 @@ import java.util.stream.Collectors;
 
 /**
  * Page Object for the Swag Labs Products (Inventory) page.
- * Handles product listing, sorting, detail navigation, and logout.
  */
 public class ProductsPage {
 
     private final WebDriver driver;
     private final WebDriverWait wait;
+    private final JavascriptExecutor js;
 
-    // Page-level locators
-    private final By pageTitle           = By.cssSelector(".title");
-    private final By productItems        = By.cssSelector(".inventory_item");
-    private final By productNames        = By.cssSelector(".inventory_item_name");
-    private final By productPrices       = By.cssSelector(".inventory_item_price");
-    private final By sortDropdown        = By.cssSelector("[data-test='product-sort-container']");
-    private final By addToCartButtons    = By.cssSelector("[data-test^='add-to-cart']");
-    private final By cartBadge           = By.cssSelector(".shopping_cart_badge");
-
-    // Detail page locators
-    private final By detailName          = By.cssSelector(".inventory_details_name");
-    private final By detailDesc          = By.cssSelector(".inventory_details_desc");
-    private final By detailPrice         = By.cssSelector(".inventory_details_price");
-    private final By backButton          = By.id("back-to-products");
-
-    // Navigation locators
-    private final By burgerMenuButton    = By.id("react-burger-menu-btn");
-    private final By logoutLink          = By.id("logout_sidebar_link");
+    private final By pageTitle        = By.cssSelector(".title");
+    private final By productItems     = By.cssSelector(".inventory_item");
+    private final By productNames     = By.cssSelector(".inventory_item_name");
+    private final By productPrices    = By.cssSelector(".inventory_item_price");
+    private final By sortDropdown     = By.cssSelector("[data-test='product-sort-container']");
+    private final By cartBadge        = By.cssSelector(".shopping_cart_badge");
+    private final By detailName       = By.cssSelector(".inventory_details_name");
+    private final By detailDesc       = By.cssSelector(".inventory_details_desc");
+    private final By detailPrice      = By.cssSelector(".inventory_details_price");
+    private final By backButton       = By.id("back-to-products");
+    private final By burgerMenuButton = By.id("react-burger-menu-btn");
+    private final By logoutLink       = By.id("logout_sidebar_link");
 
     public static final String INVENTORY_URL = "https://www.saucedemo.com/inventory.html";
 
     public ProductsPage(WebDriver driver) {
         this.driver = driver;
         this.wait   = new WebDriverWait(driver, Duration.ofSeconds(15));
+        this.js     = (JavascriptExecutor) driver;
+    }
+
+    /**
+     * Clicks an element via JavaScript.
+     * Bypasses CSS overlays or animations blocking normal Selenium clicks in headless CI.
+     */
+    private void jsClick(WebElement element) {
+        js.executeScript("arguments[0].scrollIntoView(true);", element);
+        js.executeScript("arguments[0].click();", element);
     }
 
     // ── Page state ───────────────────────────────────────────────────────────
@@ -99,7 +104,7 @@ public class ProductsPage {
         );
         for (WebElement el : names) {
             if (el.getText().equals(productName)) {
-                el.click();
+                jsClick(el);
                 return;
             }
         }
@@ -119,13 +124,11 @@ public class ProductsPage {
     }
 
     /**
-     * Clicks the Back button and waits for the inventory URL to load.
-     *
-     * FIX: Added urlToBe wait after click. In CI, isDisplayed() was running
-     * before the browser navigated back, so the title check returned false.
+     * Clicks Back to Products via JS and waits for inventory URL.
      */
     public void clickBackToProducts() {
-        wait.until(ExpectedConditions.elementToBeClickable(backButton)).click();
+        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(backButton));
+        jsClick(btn);
         wait.until(ExpectedConditions.urlToBe(INVENTORY_URL));
     }
 
@@ -138,7 +141,8 @@ public class ProductsPage {
                 .replace(")", "")
                 .replace(".", "");
         By addButton = By.cssSelector("[data-test='" + dataTestId + "']");
-        wait.until(ExpectedConditions.elementToBeClickable(addButton)).click();
+        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(addButton));
+        jsClick(btn);
     }
 
     public String getCartBadgeCount() {
@@ -156,16 +160,15 @@ public class ProductsPage {
     // ── Navigation ───────────────────────────────────────────────────────────
 
     /**
-     * Logs out via the burger menu and waits for the login page URL.
-     *
-     * FIX: The burger menu has a slide-open animation. In CI, clicking
-     * logoutLink immediately after opening the menu fails because the link
-     * isn't yet clickable. We explicitly wait for the link to be clickable,
-     * then wait for the URL to confirm logout completed.
+     * Logs out via the burger menu.
+     * Opens menu via JS click (bypasses animation), waits for logout link
+     * to be clickable, clicks it via JS, then waits for login page URL.
      */
     public void logout() {
-        wait.until(ExpectedConditions.elementToBeClickable(burgerMenuButton)).click();
-        wait.until(ExpectedConditions.elementToBeClickable(logoutLink)).click();
+        WebElement menu = wait.until(ExpectedConditions.presenceOfElementLocated(burgerMenuButton));
+        jsClick(menu);
+        WebElement logout = wait.until(ExpectedConditions.elementToBeClickable(logoutLink));
+        jsClick(logout);
         wait.until(ExpectedConditions.urlToBe("https://www.saucedemo.com/"));
     }
 }

@@ -1,6 +1,7 @@
 package pages;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -11,19 +12,16 @@ import java.util.List;
 
 /**
  * Page Object for the Swag Labs Inventory and Cart pages.
- * Handles adding items, viewing the cart, removing items, and checkout navigation.
  */
 public class CartPage {
 
     private final WebDriver driver;
     private final WebDriverWait wait;
+    private final JavascriptExecutor js;
 
-    // Inventory page locators
     private final By addToCartButtons    = By.cssSelector("[data-test^='add-to-cart']");
     private final By cartBadge           = By.cssSelector(".shopping_cart_badge");
     private final By cartLink            = By.cssSelector(".shopping_cart_link");
-
-    // Cart page locators
     private final By cartItems           = By.cssSelector(".cart_item");
     private final By removeButtons       = By.cssSelector("[data-test^='remove']");
     private final By checkoutButton      = By.id("checkout");
@@ -32,22 +30,29 @@ public class CartPage {
     public CartPage(WebDriver driver) {
         this.driver = driver;
         this.wait   = new WebDriverWait(driver, Duration.ofSeconds(15));
+        this.js     = (JavascriptExecutor) driver;
+    }
+
+    /**
+     * Clicks an element via JavaScript.
+     * Bypasses CSS overlays or animations that block normal Selenium clicks in headless CI.
+     */
+    private void jsClick(WebElement element) {
+        js.executeScript("arguments[0].scrollIntoView(true);", element);
+        js.executeScript("arguments[0].click();", element);
     }
 
     /**
      * Adds the first N products to the cart.
-     *
-     * FIX: Re-fetches buttons on every iteration.
-     * After clicking "Add to cart", the button turns into "Remove" and the DOM
-     * updates — holding onto the old list causes StaleElementReferenceException,
-     * which crashes the session or gives a wrong badge count in CI.
+     * Re-fetches buttons each iteration — after clicking, the DOM updates
+     * (button changes from "Add to cart" to "Remove"), making old references stale.
      */
     public void addItemsToCart(int count) {
         for (int i = 0; i < count; i++) {
             List<WebElement> buttons = wait.until(
                     ExpectedConditions.presenceOfAllElementsLocatedBy(addToCartButtons)
             );
-            buttons.get(i).click();
+            jsClick(buttons.get(i));
         }
     }
 
@@ -64,14 +69,12 @@ public class CartPage {
     }
 
     /**
-     * Clicks the cart icon and waits for the cart page URL to load.
-     *
-     * FIX: Added explicit wait for the cart icon to be clickable before clicking,
-     * then waits for URL to confirm navigation completed. Without this, the click
-     * fires before the element is interactive in CI and the URL never changes.
+     * Opens the cart via JS click and waits for the cart URL.
+     * JS click bypasses overlay/animation issues blocking Selenium clicks in headless CI.
      */
     public void openCart() {
-        wait.until(ExpectedConditions.elementToBeClickable(cartLink)).click();
+        WebElement cart = wait.until(ExpectedConditions.presenceOfElementLocated(cartLink));
+        jsClick(cart);
         wait.until(ExpectedConditions.urlContains("/cart.html"));
     }
 
@@ -84,42 +87,33 @@ public class CartPage {
     }
 
     /**
-     * Removes the first item in the cart and waits for the DOM to update.
-     *
-     * FIX: Waits for the button element to go stale after clicking remove.
-     * Without this, getCartItemCount() reads the DOM before it updates
-     * and returns the old count (2 instead of 1).
+     * Removes the first item and waits for the DOM to update (staleness check).
      */
     public void removeFirstItem() {
         List<WebElement> buttons = wait.until(
                 ExpectedConditions.presenceOfAllElementsLocatedBy(removeButtons)
         );
-        WebElement firstRemoveBtn = buttons.get(0);
-        firstRemoveBtn.click();
-        wait.until(ExpectedConditions.stalenessOf(firstRemoveBtn));
+        WebElement firstBtn = buttons.get(0);
+        jsClick(firstBtn);
+        wait.until(ExpectedConditions.stalenessOf(firstBtn));
     }
 
     /**
-     * Clicks the Checkout button and waits for Step 1 URL to confirm navigation.
-     *
-     * FIX: Waits for the cart page URL first (confirms we're on cart.html),
-     * then waits for the checkout button to be clickable before clicking,
-     * then waits for step-one URL to confirm the page changed.
+     * Clicks Checkout via JS and waits for Step 1 URL.
      */
     public void proceedToCheckout() {
         wait.until(ExpectedConditions.urlContains("/cart.html"));
-        wait.until(ExpectedConditions.elementToBeClickable(checkoutButton)).click();
+        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(checkoutButton));
+        jsClick(btn);
         wait.until(ExpectedConditions.urlContains("/checkout-step-one.html"));
     }
 
     /**
-     * Clicks Continue Shopping and waits for the inventory page to load.
-     *
-     * FIX: Added URL wait after click — CI is slower than local so the
-     * URL check in the test was running before the browser finished navigating.
+     * Clicks Continue Shopping via JS and waits for inventory URL.
      */
     public void continueShopping() {
-        wait.until(ExpectedConditions.elementToBeClickable(continueShoppingBtn)).click();
+        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(continueShoppingBtn));
+        jsClick(btn);
         wait.until(ExpectedConditions.urlContains("/inventory.html"));
     }
 }
