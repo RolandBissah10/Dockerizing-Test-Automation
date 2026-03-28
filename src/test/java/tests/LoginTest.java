@@ -4,13 +4,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pages.LoginPage;
+import tests.base.BaseTest;
+import tests.data.TestData;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Test suite for Swag Labs Login functionality.
- * Covers valid login, invalid credentials, and locked-out user scenarios.
- */
+
 @DisplayName("Login Tests")
 public class LoginTest extends BaseTest {
 

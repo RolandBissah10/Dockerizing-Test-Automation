@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import pages.CartPage;
 import pages.CheckoutPage;
 import pages.LoginPage;
+import tests.base.BaseTest;
+import tests.data.TestData;
 
 import static org.junit.jupiter.api.Assertions.*;
 

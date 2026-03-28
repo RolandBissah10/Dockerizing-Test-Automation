@@ -5,16 +5,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pages.LoginPage;
 import pages.ProductsPage;
+import tests.base.BaseTest;
+import tests.data.TestData;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Test suite for the Swag Labs Products (Inventory) page.
- * Covers product listing, sorting, product detail, and cart interactions
- * from the inventory view.
- */
+
 @DisplayName("Products Page Tests")
 public class ProductTest extends BaseTest {
 

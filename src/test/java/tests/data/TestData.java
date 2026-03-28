@@ -1,4 +1,4 @@
-package tests;
+package tests.data;
 
 /**
  * Central repository for all test data used across the suite.

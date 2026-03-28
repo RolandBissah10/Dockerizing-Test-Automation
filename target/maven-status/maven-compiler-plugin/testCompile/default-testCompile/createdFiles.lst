@@ -1,10 +1,10 @@
+tests\data\TestData.class
 pages\ProductsPage.class
 tests\CartTest.class
 tests\CheckoutTest.class
 pages\LoginPage.class
+tests\base\BaseTest.class
 pages\CartPage.class
 pages\CheckoutPage.class
-tests\BaseTest.class
 tests\LoginTest.class
 tests\ProductTest.class
-tests\TestData.class
