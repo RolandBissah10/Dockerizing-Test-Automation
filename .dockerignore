@@ -1,0 +1,18 @@
+# Git metadata
+.git
+.gitignore
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.code-workspace
+
+# Build outputs (will be rebuilt inside Docker)
+target/
+
+# CI config (not needed inside image)
+.github/
+
+# Documentation
+*.md
