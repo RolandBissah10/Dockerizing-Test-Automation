@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 /**
  * Page Object for the Swag Labs Products (Inventory) page.
- * Handles product listing, sorting, filtering, and detail navigation.
+ * Handles product listing, sorting, detail navigation, and logout.
  */
 public class ProductsPage {
 
@@ -25,19 +25,20 @@ public class ProductsPage {
     private final By productItems        = By.cssSelector(".inventory_item");
     private final By productNames        = By.cssSelector(".inventory_item_name");
     private final By productPrices       = By.cssSelector(".inventory_item_price");
-    private final By productDescriptions = By.cssSelector(".inventory_item_desc");
     private final By sortDropdown        = By.cssSelector("[data-test='product-sort-container']");
     private final By addToCartButtons    = By.cssSelector("[data-test^='add-to-cart']");
-    private final By burgerMenuButton    = By.id("react-burger-menu-btn");
-    private final By logoutLink          = By.id("logout_sidebar_link");
-    private final By cartLink            = By.cssSelector(".shopping_cart_link");
     private final By cartBadge           = By.cssSelector(".shopping_cart_badge");
+    private final By cartLink            = By.cssSelector(".shopping_cart_link");
 
-    // Product detail locators
+    // Detail page locators
     private final By detailName          = By.cssSelector(".inventory_details_name");
     private final By detailDesc          = By.cssSelector(".inventory_details_desc");
     private final By detailPrice         = By.cssSelector(".inventory_details_price");
     private final By backButton          = By.id("back-to-products");
+
+    // Navigation locators
+    private final By burgerMenuButton    = By.id("react-burger-menu-btn");
+    private final By logoutLink          = By.id("logout_sidebar_link");
 
     public static final String INVENTORY_URL = "https://www.saucedemo.com/inventory.html";
 
@@ -57,10 +58,6 @@ public class ProductsPage {
         }
     }
 
-    public String getPageTitle() {
-        return wait.until(ExpectedConditions.visibilityOfElementLocated(pageTitle)).getText();
-    }
-
     // ── Product listing ──────────────────────────────────────────────────────
 
     public int getProductCount() {
@@ -69,16 +66,16 @@ public class ProductsPage {
 
     public List<String> getProductNames() {
         return driver.findElements(productNames)
-                     .stream()
-                     .map(WebElement::getText)
-                     .collect(Collectors.toList());
+                .stream()
+                .map(WebElement::getText)
+                .collect(Collectors.toList());
     }
 
     public List<String> getProductPrices() {
         return driver.findElements(productPrices)
-                     .stream()
-                     .map(WebElement::getText)
-                     .collect(Collectors.toList());
+                .stream()
+                .map(WebElement::getText)
+                .collect(Collectors.toList());
     }
 
     public List<Double> getProductPricesAsDouble() {
@@ -88,10 +85,6 @@ public class ProductsPage {
                 .collect(Collectors.toList());
     }
 
-    public boolean isProductVisible(String productName) {
-        return getProductNames().contains(productName);
-    }
-
     // ── Sorting ──────────────────────────────────────────────────────────────
 
     public void sortBy(String sortValue) {
@@ -99,15 +92,11 @@ public class ProductsPage {
         new Select(dropdown).selectByValue(sortValue);
     }
 
-    public String getActiveSortOption() {
-        return new Select(driver.findElement(sortDropdown)).getFirstSelectedOption().getAttribute("value");
-    }
-
     // ── Product detail ───────────────────────────────────────────────────────
 
     public void clickProduct(String productName) {
         List<WebElement> names = wait.until(
-            ExpectedConditions.presenceOfAllElementsLocatedBy(productNames)
+                ExpectedConditions.presenceOfAllElementsLocatedBy(productNames)
         );
         for (WebElement el : names) {
             if (el.getText().equals(productName)) {
@@ -130,14 +119,20 @@ public class ProductsPage {
         return driver.findElement(detailPrice).getText();
     }
 
+    /**
+     * Clicks the Back button and waits for the inventory page to load.
+     *
+     * FIX: Added URL wait after click. In CI, isDisplayed() was running
+     * before the browser navigated back, so the title check returned false.
+     */
     public void clickBackToProducts() {
         wait.until(ExpectedConditions.elementToBeClickable(backButton)).click();
+        wait.until(ExpectedConditions.urlToBe(INVENTORY_URL));
     }
 
     // ── Cart interactions ────────────────────────────────────────────────────
 
     public void addProductToCart(String productName) {
-        // Build data-test id from product name: "Sauce Labs Backpack" → "add-to-cart-sauce-labs-backpack"
         String dataTestId = "add-to-cart-" + productName.toLowerCase()
                 .replace(" ", "-")
                 .replace("(", "")
@@ -145,15 +140,6 @@ public class ProductsPage {
                 .replace(".", "");
         By addButton = By.cssSelector("[data-test='" + dataTestId + "']");
         wait.until(ExpectedConditions.elementToBeClickable(addButton)).click();
-    }
-
-    public void addFirstNProductsToCart(int n) {
-        List<WebElement> buttons = wait.until(
-            ExpectedConditions.presenceOfAllElementsLocatedBy(addToCartButtons)
-        );
-        for (int i = 0; i < Math.min(n, buttons.size()); i++) {
-            buttons.get(i).click();
-        }
     }
 
     public String getCartBadgeCount() {
@@ -168,14 +154,19 @@ public class ProductsPage {
         }
     }
 
-    public void goToCart() {
-        driver.findElement(cartLink).click();
-    }
-
     // ── Navigation ───────────────────────────────────────────────────────────
 
+    /**
+     * Logs out via the burger menu and waits for the login page to load.
+     *
+     * FIX: The burger menu has a slide-open animation. In CI, clicking
+     * logoutLink immediately after opening the menu fails because the link
+     * isn't yet clickable. We explicitly wait for the link to be clickable,
+     * then wait for the URL to confirm the logout completed.
+     */
     public void logout() {
         wait.until(ExpectedConditions.elementToBeClickable(burgerMenuButton)).click();
         wait.until(ExpectedConditions.elementToBeClickable(logoutLink)).click();
+        wait.until(ExpectedConditions.urlToBe("https://www.saucedemo.com/"));
     }
 }
