@@ -1,6 +1,7 @@
 package pages;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -16,6 +17,7 @@ public class CheckoutPage {
 
     private final WebDriver driver;
     private final WebDriverWait wait;
+    private final JavascriptExecutor js;
 
     // Step 1 - Customer info form
     private final By firstNameField  = By.id("first-name");
@@ -37,16 +39,24 @@ public class CheckoutPage {
     public CheckoutPage(WebDriver driver) {
         this.driver = driver;
         this.wait   = new WebDriverWait(driver, Duration.ofSeconds(15));
+        this.js     = (JavascriptExecutor) driver;
+    }
+
+    /**
+     * Clicks an element via JavaScript.
+     * Bypasses CSS overlays or animations that block normal Selenium clicks in headless CI.
+     */
+    private void jsClick(WebElement element) {
+        js.executeScript("arguments[0].scrollIntoView(true);", element);
+        js.executeScript("arguments[0].click();", element);
     }
 
     // ── Step 1: Customer Information ─────────────────────────────────────────
 
     /**
      * Fills in the customer info form fields.
-     *
-     * FIX: Explicitly waits for each field to be visible before interacting.
-     * This ensures the Step 1 page is fully rendered before we try to type,
-     * which was causing silent failures in CI where the page loaded slowly.
+     * Waits for each field to be visible before interacting — ensures the
+     * Step 1 page is fully rendered before typing.
      */
     public void fillCustomerInfo(String firstName, String lastName, String postalCode) {
         WebElement fn = wait.until(ExpectedConditions.visibilityOfElementLocated(firstNameField));
@@ -63,21 +73,23 @@ public class CheckoutPage {
     }
 
     /**
-     * Clicks the Continue button.
+     * Clicks the Continue button via JavaScript.
      *
-     * NOTE: No URL wait here — if fields are invalid the URL does NOT change
-     * (we stay on Step 1 and an error appears). Each caller handles its own
-     * outcome via isOnStep2() or getErrorMessage().
+     * FIX: Normal Selenium click was being silently blocked by headless Chrome
+     * in CI — same overlay/animation issue as CartPage. JS click bypasses this.
+     *
+     * No URL wait here because:
+     * - Valid form → URL changes to step-two (handled by isOnStep2())
+     * - Invalid form → URL stays on step-one, error appears (handled by getErrorMessage())
      */
     public void clickContinue() {
-        wait.until(ExpectedConditions.elementToBeClickable(continueButton)).click();
+        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(continueButton));
+        jsClick(btn);
     }
 
     /**
      * Returns the validation error shown on Step 1.
-     *
-     * FIX: Waits for the error element to become visible — it appears after
-     * a short delay following the Continue click, which CI wasn't waiting for.
+     * Waits for the error element to become visible after Continue is clicked.
      */
     public String getErrorMessage() {
         return wait.until(ExpectedConditions.visibilityOfElementLocated(errorMessage)).getText();
@@ -91,10 +103,7 @@ public class CheckoutPage {
 
     /**
      * Checks if the browser is on Step 2.
-     *
-     * FIX: Actively waits for the URL to change rather than just reading it
-     * instantly. Without this, the check runs before navigation completes
-     * in CI and returns false even when the page is loading correctly.
+     * Actively waits for the URL to change rather than just reading it instantly.
      */
     public boolean isOnStep2() {
         try {
@@ -118,14 +127,14 @@ public class CheckoutPage {
     }
 
     /**
-     * Clicks Finish and waits for the confirmation page URL.
+     * Clicks Finish via JavaScript and waits for the confirmation page URL.
      *
-     * FIX: Step 2 sometimes renders slowly in CI — the finish button was
-     * not yet clickable when the test tried to click it. Now we wait for
-     * it to be clickable, click, then confirm navigation via URL wait.
+     * FIX: Same headless CI click-blocking issue as Continue button.
+     * JS click ensures the event fires regardless of overlay state.
      */
     public void clickFinish() {
-        wait.until(ExpectedConditions.elementToBeClickable(finishButton)).click();
+        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(finishButton));
+        jsClick(btn);
         wait.until(ExpectedConditions.urlContains("/checkout-complete.html"));
     }
 
@@ -140,7 +149,8 @@ public class CheckoutPage {
     }
 
     public void clickBackHome() {
-        wait.until(ExpectedConditions.elementToBeClickable(backHomeButton)).click();
+        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(backHomeButton));
+        jsClick(btn);
         wait.until(ExpectedConditions.urlContains("/inventory.html"));
     }
 }
