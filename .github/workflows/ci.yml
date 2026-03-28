@@ -1,28 +1,28 @@
 name: Swag Labs Selenium Tests (Docker)
 
-# ─── Triggers ─────────────────────────────────────────────────────────────────
 on:
   push:
-    branches:
-      - main
-      - develop
+    branches: [main, develop]
   pull_request:
-    branches:
-      - main
-  workflow_dispatch:          # Allows manual trigger from GitHub Actions UI
+    branches: [main]
+  workflow_dispatch:
 
-# ─── Jobs ─────────────────────────────────────────────────────────────────────
+# ✅ FIX: Required for junit report
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   test:
     name: Build & Run Containerized Tests
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Check out the repository
+      # 1. Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Build the Docker image from our Dockerfile
+      # 2. Build Docker image
       - name: Build Docker image
         run: |
           docker build \
@@ -30,42 +30,30 @@ jobs:
             --tag swag-labs-tests:latest \
             .
 
-      # 3. Run the test suite inside the container
-      #    Exit code from Maven propagates — non-zero = tests failed = job fails
+      # 3. Run container (DO NOT remove it yet)
       - name: Run test suite in container
         run: |
           docker run \
             --name test-run \
-            --rm \
-            swag-labs-tests:latest
+            swag-labs-tests:latest || true
 
-      # 4. Copy test reports out of the container before it's removed
-      #    (Only runs if tests were executed — even on failure)
+      # 4. Copy reports from the SAME container
       - name: Extract test reports
         if: always()
         run: |
-          # Re-run container just to extract reports (no --rm this time)
-          docker run \
-            --name test-report-extract \
-            swag-labs-tests:latest \
-            sh -c "mvn test -B --no-transfer-progress; exit 0" || true
+          docker cp test-run:/app/target/surefire-reports ./surefire-reports || true
+          docker rm test-run || true
 
-          # Copy the Surefire XML reports from the container
-          docker cp test-report-extract:/app/target/surefire-reports ./surefire-reports || true
-
-          # Clean up the named container
-          docker rm test-report-extract || true
-
-      # 5. Publish JUnit test results as a GitHub Check
+      # 5. Publish test results (GitHub Checks)
       - name: Publish test results
         uses: mikepenz/action-junit-report@v4
         if: always()
         with:
-          report_paths: '**/surefire-reports/TEST-*.xml'
+          report_paths: 'surefire-reports/TEST-*.xml'
           check_name: JUnit Test Results
           fail_on_failure: true
 
-      # 6. Upload the raw Surefire reports as a build artifact
+      # 6. Upload reports artifact
       - name: Upload Surefire reports artifact
         uses: actions/upload-artifact@v4
         if: always()

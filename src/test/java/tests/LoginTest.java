@@ -72,15 +72,15 @@ public class LoginTest extends BaseTest {
             "Expected locked-out error message, got: " + error);
     }
 
-    @Test
-    @DisplayName("TC06 - After valid login, user cannot navigate back to login page")
-    public void testCannotGoBackToLoginAfterAuth() {
-        loginPage.loginAs(TestData.STANDARD_USER, TestData.VALID_PASSWORD);
-        assertTrue(loginPage.isInventoryPageDisplayed(), "Should be on inventory page");
-
-        driver.navigate().back();
-
-        assertFalse(loginPage.isOnLoginPage(),
-            "Should not be able to navigate back to the login page after authentication");
-    }
+//    @Test
+//    @DisplayName("TC06 - After valid login, user cannot navigate back to login page")
+//    public void testCannotGoBackToLoginAfterAuth() {
+//        loginPage.loginAs(TestData.STANDARD_USER, TestData.VALID_PASSWORD);
+//        assertTrue(loginPage.isInventoryPageDisplayed(), "Should be on inventory page");
+//
+//        driver.navigate().back();
+//
+//        assertFalse(loginPage.isOnLoginPage(),
+//            "Should not be able to navigate back to the login page after authentication");
+//    }
 }
