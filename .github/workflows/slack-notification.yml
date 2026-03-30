@@ -1,0 +1,130 @@
+name: Slack Notification
+
+on:
+  workflow_call:
+    inputs:
+      status:
+        required: true
+        type: string
+      tests_total:
+        required: false
+        type: string
+        default: 'N/A'
+      tests_passed:
+        required: false
+        type: string
+        default: 'N/A'
+      tests_failed:
+        required: false
+        type: string
+        default: 'N/A'
+      tests_skipped:
+        required: false
+        type: string
+        default: 'N/A'
+      passed_tests:
+        required: false
+        type: string
+        default: ''
+      failed_tests:
+        required: false
+        type: string
+        default: ''
+    secrets:
+      SLACK_WEBHOOK_URL:
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build and Send Slack Notification
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          PASSED_TESTS: ${{ inputs.passed_tests }}
+          FAILED_TESTS: ${{ inputs.failed_tests }}
+        run: |
+          STATUS="${{ inputs.status }}"
+          if [ "$STATUS" = "success" ]; then
+            STATUS_ICON="✅"
+            STATUS_COLOR="#28a745"
+            STATUS_LABEL="PASSED"
+          else
+            STATUS_ICON="❌"
+            STATUS_COLOR="#dc3545"
+            STATUS_LABEL="FAILED"
+          fi
+
+          TESTS_FAILED="${{ inputs.tests_failed }}"
+
+          echo "=== INPUT passed_tests ==="
+          echo "$PASSED_TESTS"
+          echo "=== INPUT failed_tests ==="
+          echo "$FAILED_TESTS"
+          echo "=== INPUT tests_failed ==="
+          echo "$TESTS_FAILED"
+
+          # Build base fields
+          BASE_FIELDS=$(jq -n \
+            --arg repo     "${{ github.repository }}" \
+            --arg branch   "${{ github.ref_name }}" \
+            --arg run      "${{ github.run_number }}" \
+            --arg commit   "${{ github.sha }}" \
+            --arg results  "Total: *${{ inputs.tests_total }}*  |  ✅ Passed: *${{ inputs.tests_passed }}*  |  ❌ Failed: *${{ inputs.tests_failed }}*  |  ⏭ Skipped: *${{ inputs.tests_skipped }}*" \
+            '[
+              {"title": "Repository",   "value": $repo,    "short": true},
+              {"title": "Branch",       "value": $branch,  "short": true},
+              {"title": "Run #",        "value": $run,     "short": true},
+              {"title": "Commit",       "value": $commit,  "short": true},
+              {"title": "Test Results", "value": $results, "short": false}
+            ]')
+
+          FIELDS="$BASE_FIELDS"
+
+          # Add passed tests field — only show on failure
+          if [ "$STATUS" != "success" ] && [ -n "$PASSED_TESTS" ]; then
+            PASSED_FIELD=$(jq -n \
+              --arg val "$(printf '```\n%s\n```' "$PASSED_TESTS")" \
+              '{"title": "✅ Passed Tests", "value": $val, "short": false}')
+            FIELDS=$(echo "$FIELDS" | jq --argjson f "$PASSED_FIELD" '. + [$f]')
+          fi
+
+          # Add failed tests field if any
+          if [ "$TESTS_FAILED" != "0" ] && [ "$TESTS_FAILED" != "N/A" ] && [ -n "$FAILED_TESTS" ]; then
+            FAILED_FIELD=$(jq -n \
+              --arg val "$(printf '```\n%s\n```' "$FAILED_TESTS")" \
+              '{"title": "❌ Failed Tests", "value": $val, "short": false}')
+            FIELDS=$(echo "$FIELDS" | jq --argjson f "$FAILED_FIELD" '. + [$f]')
+          fi
+
+          # Build final payload
+          PAYLOAD=$(jq -n \
+            --arg text       "${STATUS_ICON} CI Test Run ${STATUS_LABEL} — ${{ github.repository }} (#${{ github.run_number }})" \
+            --arg color      "$STATUS_COLOR" \
+            --argjson fields "$FIELDS" \
+            '{
+              "text": $text,
+              "attachments": [
+                {
+                  "color": $color,
+                  "fields": $fields
+                }
+              ]
+            }')
+
+          echo "=== Slack Payload ==="
+          echo "$PAYLOAD"
+
+          RESPONSE=$(curl -s -o /tmp/slack_response.txt -w "%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            --data "$PAYLOAD" \
+            "$SLACK_WEBHOOK_URL")
+
+          echo "=== HTTP Status: $RESPONSE ==="
+          cat /tmp/slack_response.txt
+
+          if [ "$RESPONSE" != "200" ]; then
+            echo "❌ Slack notification failed with HTTP $RESPONSE"
+            exit 1
+          fi
