@@ -11,7 +11,7 @@ RUN mvn compile test-compile -B
 FROM eclipse-temurin:11-jdk-jammy
 
 LABEL maintainer="QA Team"
-LABEL description="Swag Labs Selenium + JUnit test suite running in Docker"
+LABEL description="Swag Labs Selenium + JUnit + Allure test suite in Docker"
 
 RUN apt-get update && apt-get install -y \
     wget curl gnupg unzip \
@@ -48,4 +48,4 @@ ENV CHROME_OPTIONS="--headless=new --no-sandbox --disable-dev-shm-usage --disabl
 
 RUN google-chrome --version
 
-ENTRYPOINT ["mvn", "test", "-B", "--no-transfer-progress"]
+ENTRYPOINT ["mvn", "clean", "test", "-Dallure.results.directory=target/allure-results", "-B", "--no-transfer-progress"]

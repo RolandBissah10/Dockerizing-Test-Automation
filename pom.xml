@@ -12,7 +12,7 @@
     <packaging>jar</packaging>
 
     <name>Swag Labs Docker Test Suite</name>
-    <description>Containerized Selenium + JUnit test suite for Swag Labs</description>
+    <description>Containerized Selenium + JUnit + Allure test suite for Swag Labs</description>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -51,11 +51,18 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- WebDriverManager - auto manages ChromeDriver -->
+        <!-- WebDriverManager -->
         <dependency>
             <groupId>io.github.bonigarcia</groupId>
             <artifactId>webdrivermanager</artifactId>
             <version>${webdrivermanager.version}</version>
+        </dependency>
+
+        <!-- Allure JUnit 5 -->
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-junit5</artifactId>
+            <version>2.24.0</version>
         </dependency>
     </dependencies>
 
@@ -70,6 +77,9 @@
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
+                    <systemPropertyVariables>
+                        <allure.results.directory>target/allure-results</allure.results.directory>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
 
@@ -82,6 +92,13 @@
                     <source>11</source>
                     <target>11</target>
                 </configuration>
+            </plugin>
+
+            <!-- Allure Maven Plugin -->
+            <plugin>
+                <groupId>io.qameta.allure</groupId>
+                <artifactId>allure-maven</artifactId>
+                <version>2.12.0</version>
             </plugin>
         </plugins>
     </build>
