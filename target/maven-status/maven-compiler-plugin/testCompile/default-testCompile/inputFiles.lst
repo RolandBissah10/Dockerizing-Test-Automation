@@ -1,10 +1,6 @@
-C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\pages\CartPage.java
-C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\pages\CheckoutPage.java
-C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\pages\LoginPage.java
-C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\pages\ProductsPage.java
-C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\tests\base\BaseTest.java
-C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\tests\CartTest.java
-C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\tests\CheckoutTest.java
-C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\tests\data\TestData.java
-C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\tests\LoginTest.java
-C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\tests\ProductTest.java
+C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\com\swaglabs\base\BaseTest.java
+C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\com\swaglabs\data\TestData.java
+C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\com\swaglabs\tests\CartTest.java
+C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\com\swaglabs\tests\CheckoutTest.java
+C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\com\swaglabs\tests\LoginTest.java
+C:\Users\FrancisRolandBissah\Downloads\swag-labs-docker-tests\swag-labs-docker-tests\src\test\java\com\swaglabs\tests\ProductTest.java

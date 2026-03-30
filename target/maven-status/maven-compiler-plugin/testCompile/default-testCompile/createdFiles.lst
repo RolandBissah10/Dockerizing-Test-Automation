@@ -1,10 +1,6 @@
-tests\data\TestData.class
-pages\ProductsPage.class
-tests\CartTest.class
-tests\CheckoutTest.class
-pages\LoginPage.class
-tests\base\BaseTest.class
-pages\CartPage.class
-pages\CheckoutPage.class
-tests\LoginTest.class
-tests\ProductTest.class
+com\swaglabs\data\TestData.class
+com\swaglabs\tests\CheckoutTest.class
+com\swaglabs\tests\ProductTest.class
+com\swaglabs\base\BaseTest.class
+com\swaglabs\tests\CartTest.class
+com\swaglabs\tests\LoginTest.class
