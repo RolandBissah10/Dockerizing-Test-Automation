@@ -1,164 +1,164 @@
-#name: Email Notification
-#
-#on:
-#  workflow_call:
-#    inputs:
-#      status:
-#        required: true
-#        type: string
-#      tests_total:
-#        required: false
-#        type: string
-#        default: 'N/A'
-#      tests_passed:
-#        required: false
-#        type: string
-#        default: 'N/A'
-#      tests_failed:
-#        required: false
-#        type: string
-#        default: 'N/A'
-#      tests_skipped:
-#        required: false
-#        type: string
-#        default: 'N/A'
-#      passed_tests:
-#        required: false
-#        type: string
-#        default: ''
-#      failed_tests:
-#        required: false
-#        type: string
-#        default: ''
-#    secrets:
-#      SMTP_SERVER:
-#        required: true
-#      SMTP_PORT:
-#        required: true
-#      SMTP_USERNAME:
-#        required: true
-#      SMTP_PASSWORD:
-#        required: true
-#      NOTIFY_EMAIL_TO:
-#        required: true
-#      NOTIFY_EMAIL_FROM:
-#        required: true
-#
-#jobs:
-#  notify:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Build Email Body
-#        id: build-body
-#        env:
-#          PASSED_TESTS: ${{ inputs.passed_tests }}
-#          FAILED_TESTS: ${{ inputs.failed_tests }}
-#        run: |
-#          STATUS="${{ inputs.status }}"
-#          if [ "$STATUS" = "success" ]; then
-#            STATUS_ICON="✅"
-#            STATUS_COLOR="#28a745"
-#            STATUS_LABEL="PASSED"
-#          else
-#            STATUS_ICON="❌"
-#            STATUS_COLOR="#dc3545"
-#            STATUS_LABEL="FAILED"
-#          fi
-#
-#          TESTS_FAILED="${{ inputs.tests_failed }}"
-#
-#          # Build passed section — only show on failure
-#          PASSED_SECTION=""
-#          if [ "$STATUS" != "success" ] && [ -n "$PASSED_TESTS" ]; then
-#            PASSED_SECTION="
-#              <h3 style='color:#28a745;margin-top:24px;'>✅ Passed Tests</h3>
-#              <pre style='background:#f0fff4;border:1px solid #c3e6cb;border-radius:6px;padding:14px;font-size:13px;font-family:monospace;white-space:pre-wrap;word-break:break-word;line-height:1.6;'>$(echo "$PASSED_TESTS" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')</pre>
-#            "
-#          fi
-#
-#          # Build failed section
-#          FAILED_SECTION=""
-#          if [ "$TESTS_FAILED" != "0" ] && [ "$TESTS_FAILED" != "N/A" ] && [ -n "$FAILED_TESTS" ]; then
-#            FAILED_SECTION="
-#              <h3 style='color:#dc3545;margin-top:24px;'>❌ Failed Tests</h3>
-#              <pre style='background:#fff5f5;border:1px solid #f5c6cb;border-radius:6px;padding:14px;font-size:13px;font-family:monospace;white-space:pre-wrap;word-break:break-word;line-height:1.6;'>$(echo "$FAILED_TESTS" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')</pre>
-#            "
-#          fi
-#
-#          cat > /tmp/email_body.html <<HTML
-#          <!DOCTYPE html>
-#          <html>
-#          <head><meta charset="UTF-8"></head>
-#          <body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
-#            <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-#
-#              <div style="background:${STATUS_COLOR};padding:20px 24px;">
-#                <h1 style="color:#fff;margin:0;font-size:22px;">${STATUS_ICON} CI Test Run ${STATUS_LABEL}</h1>
-#              </div>
-#
-#              <div style="padding:24px;">
-#                <table style="width:100%;border-collapse:collapse;font-size:14px;">
-#                  <tr>
-#                    <td style="padding:8px 0;color:#555;width:140px;">Repository</td>
-#                    <td style="padding:8px 0;font-weight:bold;">${{ github.repository }}</td>
-#                  </tr>
-#                  <tr>
-#                    <td style="padding:8px 0;color:#555;">Branch</td>
-#                    <td style="padding:8px 0;font-weight:bold;">${{ github.ref_name }}</td>
-#                  </tr>
-#                  <tr>
-#                    <td style="padding:8px 0;color:#555;">Run #</td>
-#                    <td style="padding:8px 0;font-weight:bold;">${{ github.run_number }}</td>
-#                  </tr>
-#                  <tr>
-#                    <td style="padding:8px 0;color:#555;">Commit</td>
-#                    <td style="padding:8px 0;font-family:monospace;font-size:12px;">${{ github.sha }}</td>
-#                  </tr>
-#                </table>
-#
-#                <h3 style="margin-top:24px;margin-bottom:12px;color:#333;">Test Results</h3>
-#                <table style="width:100%;border-collapse:collapse;font-size:14px;text-align:center;">
-#                  <thead>
-#                    <tr style="background:#f8f9fa;">
-#                      <th style="padding:10px;border:1px solid #dee2e6;">Total</th>
-#                      <th style="padding:10px;border:1px solid #dee2e6;color:#28a745;">✅ Passed</th>
-#                      <th style="padding:10px;border:1px solid #dee2e6;color:#dc3545;">❌ Failed</th>
-#                      <th style="padding:10px;border:1px solid #dee2e6;color:#6c757d;">⏭ Skipped</th>
-#                    </tr>
-#                  </thead>
-#                  <tbody>
-#                    <tr>
-#                      <td style="padding:10px;border:1px solid #dee2e6;font-weight:bold;font-size:18px;">${{ inputs.tests_total }}</td>
-#                      <td style="padding:10px;border:1px solid #dee2e6;font-weight:bold;font-size:18px;color:#28a745;">${{ inputs.tests_passed }}</td>
-#                      <td style="padding:10px;border:1px solid #dee2e6;font-weight:bold;font-size:18px;color:#dc3545;">${{ inputs.tests_failed }}</td>
-#                      <td style="padding:10px;border:1px solid #dee2e6;font-weight:bold;font-size:18px;color:#6c757d;">${{ inputs.tests_skipped }}</td>
-#                    </tr>
-#                  </tbody>
-#                </table>
-#
-#                ${PASSED_SECTION}
-#
-#                ${FAILED_SECTION}
-#
-#              </div>
-#
-#              <div style="background:#f8f9fa;padding:12px 24px;font-size:12px;color:#6c757d;text-align:center;">
-#                This notification was sent automatically by GitHub Actions.
-#              </div>
-#
-#            </div>
-#          </body>
-#          </html>
-#          HTML
-#
-#      - name: Send Email Notification
-#        uses: dawidd6/action-send-mail@v3
-#        with:
-#          server_address: ${{ secrets.SMTP_SERVER }}
-#          server_port:    ${{ secrets.SMTP_PORT }}
-#          username:       ${{ secrets.SMTP_USERNAME }}
-#          password:       ${{ secrets.SMTP_PASSWORD }}
-#          subject:        "[${{ inputs.status == 'success' && 'PASSED' || 'FAILED' }}] CI #${{ github.run_number }} — ${{ github.repository }} (${{ github.ref_name }})"
-#          to:             ${{ secrets.NOTIFY_EMAIL_TO }}
-#          from:           ${{ secrets.NOTIFY_EMAIL_FROM }}
-#          html_body:      file:///tmp/email_body.html
+name: Email Notification
+
+on:
+  workflow_call:
+    inputs:
+      status:
+        required: true
+        type: string
+      tests_total:
+        required: false
+        type: string
+        default: 'N/A'
+      tests_passed:
+        required: false
+        type: string
+        default: 'N/A'
+      tests_failed:
+        required: false
+        type: string
+        default: 'N/A'
+      tests_skipped:
+        required: false
+        type: string
+        default: 'N/A'
+      passed_tests:
+        required: false
+        type: string
+        default: ''
+      failed_tests:
+        required: false
+        type: string
+        default: ''
+    secrets:
+      SMTP_SERVER:
+        required: true
+      SMTP_PORT:
+        required: true
+      SMTP_USERNAME:
+        required: true
+      SMTP_PASSWORD:
+        required: true
+      NOTIFY_EMAIL_TO:
+        required: true
+      NOTIFY_EMAIL_FROM:
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Email Body
+        id: build-body
+        env:
+          PASSED_TESTS: ${{ inputs.passed_tests }}
+          FAILED_TESTS: ${{ inputs.failed_tests }}
+        run: |
+          STATUS="${{ inputs.status }}"
+          if [ "$STATUS" = "success" ]; then
+            STATUS_ICON="✅"
+            STATUS_COLOR="#28a745"
+            STATUS_LABEL="PASSED"
+          else
+            STATUS_ICON="❌"
+            STATUS_COLOR="#dc3545"
+            STATUS_LABEL="FAILED"
+          fi
+
+          TESTS_FAILED="${{ inputs.tests_failed }}"
+
+          # Build passed section — only show on failure
+          PASSED_SECTION=""
+          if [ "$STATUS" != "success" ] && [ -n "$PASSED_TESTS" ]; then
+            PASSED_SECTION="
+              <h3 style='color:#28a745;margin-top:24px;'>✅ Passed Tests</h3>
+              <pre style='background:#f0fff4;border:1px solid #c3e6cb;border-radius:6px;padding:14px;font-size:13px;font-family:monospace;white-space:pre-wrap;word-break:break-word;line-height:1.6;'>$(echo "$PASSED_TESTS" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')</pre>
+            "
+          fi
+
+          # Build failed section
+          FAILED_SECTION=""
+          if [ "$TESTS_FAILED" != "0" ] && [ "$TESTS_FAILED" != "N/A" ] && [ -n "$FAILED_TESTS" ]; then
+            FAILED_SECTION="
+              <h3 style='color:#dc3545;margin-top:24px;'>❌ Failed Tests</h3>
+              <pre style='background:#fff5f5;border:1px solid #f5c6cb;border-radius:6px;padding:14px;font-size:13px;font-family:monospace;white-space:pre-wrap;word-break:break-word;line-height:1.6;'>$(echo "$FAILED_TESTS" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')</pre>
+            "
+          fi
+
+          cat > /tmp/email_body.html <<HTML
+          <!DOCTYPE html>
+          <html>
+          <head><meta charset="UTF-8"></head>
+          <body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
+            <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+
+              <div style="background:${STATUS_COLOR};padding:20px 24px;">
+                <h1 style="color:#fff;margin:0;font-size:22px;">${STATUS_ICON} CI Test Run ${STATUS_LABEL}</h1>
+              </div>
+
+              <div style="padding:24px;">
+                <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                  <tr>
+                    <td style="padding:8px 0;color:#555;width:140px;">Repository</td>
+                    <td style="padding:8px 0;font-weight:bold;">${{ github.repository }}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:8px 0;color:#555;">Branch</td>
+                    <td style="padding:8px 0;font-weight:bold;">${{ github.ref_name }}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:8px 0;color:#555;">Run #</td>
+                    <td style="padding:8px 0;font-weight:bold;">${{ github.run_number }}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:8px 0;color:#555;">Commit</td>
+                    <td style="padding:8px 0;font-family:monospace;font-size:12px;">${{ github.sha }}</td>
+                  </tr>
+                </table>
+
+                <h3 style="margin-top:24px;margin-bottom:12px;color:#333;">Test Results</h3>
+                <table style="width:100%;border-collapse:collapse;font-size:14px;text-align:center;">
+                  <thead>
+                    <tr style="background:#f8f9fa;">
+                      <th style="padding:10px;border:1px solid #dee2e6;">Total</th>
+                      <th style="padding:10px;border:1px solid #dee2e6;color:#28a745;">✅ Passed</th>
+                      <th style="padding:10px;border:1px solid #dee2e6;color:#dc3545;">❌ Failed</th>
+                      <th style="padding:10px;border:1px solid #dee2e6;color:#6c757d;">⏭ Skipped</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style="padding:10px;border:1px solid #dee2e6;font-weight:bold;font-size:18px;">${{ inputs.tests_total }}</td>
+                      <td style="padding:10px;border:1px solid #dee2e6;font-weight:bold;font-size:18px;color:#28a745;">${{ inputs.tests_passed }}</td>
+                      <td style="padding:10px;border:1px solid #dee2e6;font-weight:bold;font-size:18px;color:#dc3545;">${{ inputs.tests_failed }}</td>
+                      <td style="padding:10px;border:1px solid #dee2e6;font-weight:bold;font-size:18px;color:#6c757d;">${{ inputs.tests_skipped }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                ${PASSED_SECTION}
+
+                ${FAILED_SECTION}
+
+              </div>
+
+              <div style="background:#f8f9fa;padding:12px 24px;font-size:12px;color:#6c757d;text-align:center;">
+                This notification was sent automatically by GitHub Actions.
+              </div>
+
+            </div>
+          </body>
+          </html>
+          HTML
+
+      - name: Send Email Notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port:    ${{ secrets.SMTP_PORT }}
+          username:       ${{ secrets.SMTP_USERNAME }}
+          password:       ${{ secrets.SMTP_PASSWORD }}
+          subject:        "[${{ inputs.status == 'success' && 'PASSED' || 'FAILED' }}] CI #${{ github.run_number }} — ${{ github.repository }} (${{ github.ref_name }})"
+          to:             ${{ secrets.NOTIFY_EMAIL_TO }}
+          from:           ${{ secrets.NOTIFY_EMAIL_FROM }}
+          html_body:      file:///tmp/email_body.html
